@@ -1,19 +1,50 @@
 import { Router } from 'express';
+import HistoryService from '../../service/historyService.js';
+import WeatherService from '../../service/weatherService.js';
+
+const { getSearchHistory, addCityToHistory, deleteCityFromHistory } = HistoryService;
+const { getWeatherForCity } = WeatherService;
+
 const router = Router();
 
-// import HistoryService from '../../service/historyService.js';
-// import WeatherService from '../../service/weatherService.js';
+// POST Request with city name to retrieve weather data
+router.post('/weather', async (req, res) => {
+  const { city } = req.body;
 
-// TODO: POST Request with city name to retrieve weather data
-router.post('/', (req, res) => {
-  // TODO: GET weather data from city name
-  // TODO: save city to search history
+  if (!city || typeof city !== 'string' || city.trim() === '') {
+    return res.status(400).json({ error: 'City name must be a non-empty string.' });
+  }
+
+  try {
+    const { lat, lon } = await getCoordinates(city);
+    const forecast = await getFiveDayForecast(lat, lon);
+    await addCityToHistory(city);
+    res.json(forecast);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
 });
 
-// TODO: GET search history
-router.get('/history', async (req, res) => {});
+// GET search history
+router.get('/history', async (_, res) => {
+  try {
+    const searchHistory = await getSearchHistory();
+    res.json(searchHistory);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
 
-// * BONUS TODO: DELETE city from search history
-router.delete('/history/:id', async (req, res) => {});
+// DELETE city from search history
+router.delete('/history/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await deleteCityFromHistory(id);
+    res.json({ message: 'City deleted from history.' });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
 
 export default router;

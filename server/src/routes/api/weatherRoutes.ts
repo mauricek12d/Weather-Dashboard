@@ -16,12 +16,11 @@ router.post('/weather', async (req, res) => {
   }
 
   try {
-    const { lat, lon } = await getCoordinates(city);
-    const forecast = await getFiveDayForecast(lat, lon);
+    const forecast = await getWeatherForCity(city);
     await addCityToHistory(city);
-    res.json(forecast);
+    return res.json(forecast);
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+    return res.status(500).json({ error: (error as Error).message });
   }
 });
 

@@ -57,11 +57,6 @@ class WeatherService {
     };
   }
 
-  // Build a query string for the geocode API
-  private buildGeocodeQuery(): string {
-    return `${this.geoURL}/direct?q=${this.cityName}&limit=1&appid=${this.apiKey}`;
-  }
-
   // Build a query string for the weather API
   private buildWeatherQuery(coordinates: Coordinates): string {
     return `${this.baseURL}/weather?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=metric`;
@@ -88,20 +83,6 @@ class WeatherService {
       response.weather[0].description,
       response.main.humidity,
       response.wind.speed
-    );
-  }
-
-  // Build a forecast array from weather data
-  private buildForecastArray(currentWeather: Weather, weatherData: any[]): Weather[] {
-    return weatherData.map(
-      (data: any) =>
-        new Weather(
-          currentWeather.cityName,
-          data.main.temp,
-          data.weather[0].description,
-          data.main.humidity,
-          data.wind.speed
-        )
     );
   }
 

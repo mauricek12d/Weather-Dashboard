@@ -1,15 +1,22 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "module": "ESNext", /* ESNext for modern JavaScript and compatibility with Vite */
+    "allowSyntheticDefaultImports": true,
+     "moduleResolution": "Node", /* Node-style resolution for module imports */
+
+    /* Output Configuration */
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "jsx": "react-jsx", /* React JSX runtime */
 
-    /* Bundler mode */
+    /* Bundler Options */
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true
+    "isolatedModules": true, /* Required by Vite */
+    "noEmit": true /* Prevent emitting JS files during build */
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

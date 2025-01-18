@@ -5,7 +5,7 @@
     "lib": ["DOM", "ES2020"], /* Include DOM and ES2020 libraries */
 
     /* Modules */
-    "module": "ESNext", /* Use ESNext module syntax */
+    "module": "NodeNext", /* Use ESNext module syntax */
     "moduleResolution": "NodeNext", /* Resolve modules for Node.js/ESNext compatibility */
 
     /* JavaScript Support */

@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Serve static files of the entire client dist folder
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Middleware for parsing JSON and urlencoded form data
 app.use(express.json());
@@ -25,7 +25,7 @@ app.use('/api', weatherRoutes);
 
 // Default route to serve the main client application
 app.get('*', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 
 // Start the server on the port

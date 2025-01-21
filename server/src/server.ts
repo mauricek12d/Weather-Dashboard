@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import weatherRoutes from './routes/api/weatherRoutes.js';
+import htmlRoutes from './routes/htmlRoutes.js';
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware to connect the routes
 app.use('/api', weatherRoutes);
+
+// Middleware to connect the HTML routes
+app.use('*', htmlRoutes);
 
 // Default route to serve the main client application
 app.get('*', (_req, res) => {

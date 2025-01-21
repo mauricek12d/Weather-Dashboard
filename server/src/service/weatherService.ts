@@ -1,84 +1,152 @@
 import dotenv from 'dotenv';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 dotenv.config();
 
-const API_KEY = process.env.WEATHER_API_KEY || '';
+const API_KEY = process.env.WEATHER_API_KEY;
+
+if (!API_KEY) {
+  throw new Error('API key is missing. Please set the WEATHER_API_KEY environment variable.');
+}
 
 interface Coordinates {
   latitude: number;
   longitude: number;
 }
 
-class Weather {
-  cityName: string;
-  temperature: number;
-  description: string;
-  humidity: number;
-  windSpeed: number;
+interface LocationData {
+  name: string;
+  lat: number;
+  lon: number;
+  country: string;
+}
 
+interface WeatherData {
+  city: {
+    name: string;
+  };
+  list: Array<{
+    main: {
+      temp: number;
+      humidity: number;
+    };
+    weather: Array<{
+      description: string;
+    }>;
+    wind: {
+      speed: number;
+    };
+    dt_txt: string;
+  }>;
+}
+
+class Weather {
   constructor(
-    cityName: string,
-    temperature: number,
-    description: string,
-    humidity: number,
-    windSpeed: number
-  ) {
-    this.cityName = cityName;
-    this.temperature = temperature;
-    this.description = description;
-    this.humidity = humidity;
-    this.windSpeed = windSpeed;
-  }
+    public cityName: string,
+    public temperature: number,
+    public description: string,
+    public humidity: number,
+    public windSpeed: number,
+    public dateTime?: string // Optional property for forecast entries
+  ) {}
 }
 
 class WeatherService {
   private baseURL: string = 'https://api.openweathermap.org/data/2.5';
   private geoURL: string = 'http://api.openweathermap.org/geo/1.0';
-  private apiKey: string = API_KEY;
+  private apiKey: string = API_KEY!;
 
-  private async fetchLocationData(city: string): Promise<any> {
+  /**
+   * Fetches geographical coordinates (latitude and longitude) for a given city name.
+   * @param city - The name of the city to fetch coordinates for.
+   * @returns An object containing latitude and longitude.
+   * @throws Will throw an error if the city name is invalid or if the API request fails.
+   */
+  private async fetchLocationData(city: string): Promise<LocationData> {
     if (!city || typeof city !== 'string' || city.trim() === '') {
       throw new Error('City name must be a non-empty string.');
     }
 
-    const url = `${this.geoURL}/direct?q=${city}&limit=1&appid=${this.apiKey}`;
+    const url = `${this.geoURL}/direct?q=${encodeURIComponent(city)}&limit=1&appid=${this.apiKey}`;
     try {
-      const response = await axios.get(url);
-      if (!response.data.length) {
-        throw new Error('City not found.');
+      const response: AxiosResponse<LocationData[]> = await axios.get(url);
+      if (response.data.length === 0) {
+        throw new Error(`No location data found for city: ${city}`);
       }
       return response.data[0];
-    } catch (error) {
-      console.error('Error fetching location data:', error);
-      throw new Error('Failed to fetch location data.');
+    } catch (error: any) {
+      if (error.response) {
+        // Server responded with a status other than 200 range
+        throw new Error(`Error fetching location data: ${error.response.statusText}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new Error('No response received from the location data service.');
+      } else {
+        // Something else caused the error
+        throw new Error(`Error in fetchLocationData: ${error.message}`);
+      }
     }
   }
 
-  private async fetchWeatherData(coordinates: Coordinates): Promise<any> {
+  /**
+   * Fetches weather forecast data for given geographical coordinates.
+   * @param coordinates - An object containing latitude and longitude.
+   * @returns The weather forecast data.
+   * @throws Will throw an error if the API request fails.
+   */
+  private async fetchWeatherData(coordinates: Coordinates): Promise<WeatherData> {
     const url = `${this.baseURL}/forecast?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=metric`;
     try {
-      const response = await axios.get(url);
+      const response: AxiosResponse<WeatherData> = await axios.get(url);
       return response.data;
-    } catch (error) {
-      console.error('Error fetching weather data:', error);
-      throw new Error('Failed to fetch weather data.');
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(`Error fetching weather data: ${error.response.statusText}`);
+      } else if (error.request) {
+        throw new Error('No response received from the weather data service.');
+      } else {
+        throw new Error(`Error in fetchWeatherData: ${error.message}`);
+      }
     }
   }
 
-  private parseCurrentWeather(data: any): Weather {
+  /**
+   * Parses the current weather data from the fetched forecast data.
+   * @param data - The weather forecast data.
+   * @returns An instance of the Weather class representing the current weather.
+   * @throws Will throw an error if the data structure is invalid.
+   */
+  private parseCurrentWeather(data: WeatherData): Weather {
+    if (!data || !data.city || !data.list || data.list.length === 0) {
+      throw new Error('Invalid weather data received.');
+    }
+
+    const currentData = data.list[0];
     return new Weather(
       data.city.name,
-      data.list[0].main.temp,
-      data.list[0].weather[0].description,
-      data.list[0].main.humidity,
-      data.list[0].wind.speed
+      currentData.main.temp,
+      currentData.weather[0].description,
+      currentData.main.humidity,
+      currentData.wind.speed,
+      currentData.dt_txt
     );
   }
 
-  private parseFiveDayForecast(data: any): Weather[] {
+  /**
+   * Parses the five-day weather forecast data.
+   * @param data - The weather forecast data.
+   * @returns An array of Weather instances representing the daily forecasts.
+   */
+  private parseFiveDayForecast(data: WeatherData): Weather[] {
+    if (!data || !data.city || !data.list || data.list.length === 0) {
+      throw new Error('Invalid weather data received.');
+    }
+
     const forecast: Weather[] = [];
-    const dailyForecasts = data.list.filter((_: any, index: number) => index % 8 === 0); 
+    const dailyForecasts = data.list.filter((entry) =>
+      entry.dt_txt.includes('12:00:00')
+    ); // Select entries corresponding to midday for daily forecasts
+
     for (const entry of dailyForecasts) {
       forecast.push(
         new Weather(
@@ -86,18 +154,21 @@ class WeatherService {
           entry.main.temp,
           entry.weather[0].description,
           entry.main.humidity,
-          entry.wind.speed
+          entry.wind.speed,
+          entry.dt_txt
         )
       );
     }
     return forecast;
   }
 
+  /**
+   * Retrieves the current weather and five-day forecast for a given city.
+   * @param city - The name of the city to fetch weather data for.
+   * @returns An object containing the current weather and an array of forecast data.
+   * @throws Will throw an error if fetching or parsing data fails.
+   */
   async getWeatherForCity(city: string): Promise<{ current: Weather; forecast: Weather[] }> {
-    if (!this.apiKey) {
-      throw new Error('API key is missing.');
-    }
-
     try {
       const locationData = await this.fetchLocationData(city);
       const coordinates: Coordinates = {
@@ -110,8 +181,8 @@ class WeatherService {
       const fiveDayForecast = this.parseFiveDayForecast(weatherData);
 
       return { current: currentWeather, forecast: fiveDayForecast };
-    } catch (error) {
-      console.error('Error in getWeatherForCity:', error);
+    } catch (error: any) {
+      console.error('Error in getWeatherForCity:', error.message);
       throw error;
     }
   }

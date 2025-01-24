@@ -73,6 +73,7 @@ class WeatherService {
       if (response.data.length === 0) {
         throw new Error(`No location data found for city: ${city}`);
       }
+      console.log(response.data)
       return response.data[0];
     } catch (error: any) {
       if (error.response) {

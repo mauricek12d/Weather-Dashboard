@@ -3,9 +3,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import weatherRoutes from './routes/api/weatherRoutes.js';
-import htmlRoutes from './routes/htmlRoutes.js';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;

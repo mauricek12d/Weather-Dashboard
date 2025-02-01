@@ -7,7 +7,10 @@ const router = Router();
 
 // POST Request with city name to retrieve weather data
 router.post('/', async (req, res) => {
+<<<<<<< HEAD
   console.log('Received body:', req.body);
+=======
+>>>>>>> aeb7f7c947f20feddb1029c26d24edd903c457b3
   const { cityName } = req.body;
 
   if (!cityName || typeof cityName !== 'string' || cityName.trim() === '') {
@@ -47,3 +50,4 @@ router.delete('/history/:id', async (req, res) => {
 });
 
 export default router;
+

@@ -1,9 +1,10 @@
 import './styles/jass.css';
+import { Weather } from '../../server/src/service/weatherService.js';
 
 // * All necessary DOM elements selected
 const searchForm: HTMLFormElement = document.getElementById(
   'search-form'
-) as HTMLFormElement;
+) as HTMLFormElement
 const searchInput: HTMLInputElement = document.getElementById(
   'search-input'
 ) as HTMLInputElement;
@@ -35,20 +36,32 @@ API Calls
 */
 
 const fetchWeather = async (cityName: string) => {
-  const response = await fetch('/api/weather/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ cityName }),
-  });
+  try {
+    const response = await fetch('/api/weather/', { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cityName }),
+    });
 
-  const weatherData = await response.json();
+    if (!response.ok) {
+      throw new Error(`Error fetching weather data: ${response.statusText}`);
+    }
 
-  console.log('weatherData: ', weatherData);
+    const weatherData = await response.json();
+    console.log('weatherData: ', weatherData);
 
-  renderCurrentWeather(weatherData[0]);
-  renderForecast(weatherData.slice(1));
+    //Ensuring Correct Structure
+    if (!weatherData || !weatherData.current || !weatherData.forecast) {
+      throw new Error('No weather data available');
+    }
+
+    renderCurrentWeather(weatherData.current);
+    renderForecast(weatherData.forecast);
+  } catch (error) {
+    console.error('Fetch error:', error);
+  }
 };
 
 const fetchSearchHistory = async () => {
@@ -77,19 +90,27 @@ Render Functions
 */
 
 const renderCurrentWeather = (currentWeather: any): void => {
-  const { city, date, icon, iconDescription, tempF, windSpeed, humidity } =
-    currentWeather;
+  if (!currentWeather) {
+    console.error('No weather data available');
+    return;
+  }
 
-  // convert the following to typescript
-  heading.textContent = `${city} (${date})`;
-  weatherIcon.setAttribute(
-    'src',
-    `https://openweathermap.org/img/w/${icon}.png`
-  );
-  weatherIcon.setAttribute('alt', iconDescription);
-  weatherIcon.setAttribute('class', 'weather-img');
-  heading.append(weatherIcon);
-  tempEl.textContent = `Temp: ${tempF}°F`;
+  // Ensure the API response contains all expected fields
+  const { cityName, dateTime, icon, description, temperature, windSpeed, humidity } = currentWeather;
+
+  heading.textContent = `${cityName} (${dateTime})`;
+
+  if (icon) {
+    weatherIcon.setAttribute('src', `https://openweathermap.org/img/w/${icon}.png`);
+    weatherIcon.setAttribute('alt', description);
+    weatherIcon.setAttribute('class', 'weather-img');
+    heading.append(weatherIcon);
+  } else {
+    weatherIcon.removeAttribute('src'); 
+    weatherIcon.removeAttribute('alt');
+  }
+
+  tempEl.textContent = `Temp: ${temperature.toFixed(1)}°F`; 
   windEl.textContent = `Wind: ${windSpeed} MPH`;
   humidityEl.textContent = `Humidity: ${humidity} %`;
 
@@ -99,45 +120,50 @@ const renderCurrentWeather = (currentWeather: any): void => {
   }
 };
 
-const renderForecast = (forecast: any): void => {
+
+const renderForecast = (forecast: Weather[]): void => {
+  if (!forecast || forecast.length === 0) {
+    console.error('No forecast data available');
+    return;
+  }
+
+  forecastContainer.innerHTML = ''; // Clears previous forecast
   const headingCol = document.createElement('div');
   const heading = document.createElement('h4');
-
   headingCol.setAttribute('class', 'col-12');
   heading.textContent = '5-Day Forecast:';
   headingCol.append(heading);
+  forecastContainer.append(headingCol);
 
-  if (forecastContainer) {
-    forecastContainer.innerHTML = '';
-    forecastContainer.append(headingCol);
-  }
-
-  for (let i = 0; i < forecast.length; i++) {
-    renderForecastCard(forecast[i]);
+  for (const day of forecast) {
+    renderForecastCard(day);
   }
 };
 
-const renderForecastCard = (forecast: any) => {
-  const { date, icon, iconDescription, tempF, windSpeed, humidity } = forecast;
+const renderForecastCard = (forecast: Weather) => {
+  if (!forecast || !forecast.cityName) {
+    console.error('Invalid forecast data', forecast);
+    return;
+  }
+
+  const { dateTime, icon, description, temperature, windSpeed, humidity } = forecast;
 
   const { col, cardTitle, weatherIcon, tempEl, windEl, humidityEl } =
     createForecastCard();
 
   // Add content to elements
-  cardTitle.textContent = date;
+  cardTitle.textContent = dateTime;
   weatherIcon.setAttribute(
     'src',
     `https://openweathermap.org/img/w/${icon}.png`
   );
-  weatherIcon.setAttribute('alt', iconDescription);
-  tempEl.textContent = `Temp: ${tempF} °F`;
+  weatherIcon.setAttribute('alt', description);
+  tempEl.textContent = `Temp: ${temperature} °F`;
   windEl.textContent = `Wind: ${windSpeed} MPH`;
   humidityEl.textContent = `Humidity: ${humidity} %`;
 
-  if (forecastContainer) {
     forecastContainer.append(col);
-  }
-};
+  };
 
 const renderSearchHistory = async (searchHistory: any) => {
   const historyList = await searchHistory.json();

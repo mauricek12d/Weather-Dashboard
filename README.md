@@ -38,10 +38,18 @@ A live demo of the project is available at:
    git clone https://github.com/yourusername/weather-dashboard.git
    cd weather-dashboard
 
-cd client
-npm install
 
-cd ../server
-npm install
+**Configuration
+Environment Variables
+Create a .env file in the server directory and add the following:
+
+PORT=3001
+API_BASE_URL=https://api.openweathermap.org
+WEATHER_API_KEY=your_weather_API_KEY 
+Replace your_weather_api_key with your actual API key from your weather data provider (e.g., OpenWeatherMap).
+
+npm run install
+npm run build
+npm run start
 
 

@@ -6,11 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run client:build && npm run server",
-<<<<<<< HEAD
     "start-dev": "concurrently \"npm run server:dev\" \"wait-on tcp:3001 && npm run client:dev\"",
-=======
-    "start:dev": "concurrently \"npm run server:dev\" \"wait-on tcp-3001 && npm run client:dev\"",
->>>>>>> 5a60b490e67c3d242cc81cf254cdb96e680a4585
     "server": "cd server && npm start",
     "server:dev": "cd server && npm run dev",
     "install": "cd server && npm i && cd ../client && npm i",

@@ -40,6 +40,7 @@ A live demo of the project is available at:
 
 
 **Configuration
+
 Environment Variables
 Create a .env file in the server directory and add the following:
 
